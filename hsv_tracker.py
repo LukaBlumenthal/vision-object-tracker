@@ -21,7 +21,19 @@ while True:
     cv2.RETR_EXTERNAL,
     cv2.CHAIN_APPROX_SIMPLE
 )
-    cv2.drawContours(frame, contours, -1, (0, 255, 0), 2)
+    if contours:
+        biggest = max(contours, key=cv2.contourArea)
+
+        x, y, w, h = cv2.boundingRect(biggest)
+
+        cv2.rectangle(
+         frame,
+        (x, y),
+        (x + w, y + h),
+        (0, 255, 0),
+        2
+    )
+        
     
     cv2.imshow("Webcam", frame)
     cv2.imshow("Mask", mask)
