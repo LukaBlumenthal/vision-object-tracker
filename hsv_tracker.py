@@ -9,7 +9,10 @@ while True:
     if not success:
         break
 
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
     cv2.imshow("Webcam", frame)
+    cv2.imshow("HSV", hsv)
 
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
