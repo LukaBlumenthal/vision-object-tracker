@@ -16,6 +16,13 @@ while True:
 
     mask = cv2.inRange(hsv, lower_blue, upper_blue)
 
+    contours, _ = cv2.findContours(
+    mask,
+    cv2.RETR_EXTERNAL,
+    cv2.CHAIN_APPROX_SIMPLE
+)
+    cv2.drawContours(frame, contours, -1, (0, 255, 0), 2)
+    
     cv2.imshow("Webcam", frame)
     cv2.imshow("Mask", mask)
 
