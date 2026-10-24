@@ -1,7 +1,10 @@
 import cv2
 import numpy as np
+import time
 
 cap = cv2.VideoCapture(1)
+
+last_print_time = time.time()
 
 while True:
     success, frame = cap.read()
@@ -55,6 +58,37 @@ while True:
             (255, 255, 255),
             2
         )
+
+        frame_height, frame_width = frame.shape[:2]
+
+        frame_center_x = frame_width // 2
+        frame_center_y = frame_height // 2
+
+        difference_x = center_x - frame_center_x
+        difference_y = center_y - frame_center_y
+
+        current_time = time.time()
+
+        if current_time - last_print_time >= 2:
+
+            if center_x < frame_center_x:
+                print("Left")
+            elif frame_center_x < center_x:
+                print("Right")
+            else:
+                print("Center")
+ 
+            if center_y < frame_center_y:
+                print("Up")
+            elif center_y > frame_center_y:
+                print("Down")
+            else:
+                print("Center")
+
+            last_print_time = current_time
+             
+        
+
 
     cv2.imshow("Webcam", frame)
     cv2.imshow("Mask", mask)
