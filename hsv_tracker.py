@@ -3,58 +3,13 @@ import numpy as np
 import time
 
 
-CAMERA_INDEX = 1
-PRINT_INTERVAL = 2
-
-LOWER_BLUE = np.array([100, 100, 50])
-UPPER_BLUE = np.array([140, 255, 255])
-
-
-def create_blue_mask(frame):
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-    mask = cv2.inRange(
-        hsv,
-        LOWER_BLUE,
-        UPPER_BLUE
-    )
-
-    return mask
-
-
-def find_biggest_contour(mask):
-    contours, _ = cv2.findContours(
-        mask,
-        cv2.RETR_EXTERNAL,
-        cv2.CHAIN_APPROX_SIMPLE
-    )
-
-    if not contours:
-        return None
-
-    biggest = max(contours, key=cv2.contourArea)
-
-    return biggest
-
-
 def get_object_center(x, y, w, h):
     center_x = x + w // 2
     center_y = y + h // 2
-
     return center_x, center_y
 
 
-def get_frame_center(frame):
-    frame_height, frame_width = frame.shape[:2]
-
-    frame_center_x = frame_width // 2
-    frame_center_y = frame_height // 2
-
-    return frame_center_x, frame_center_y
-
-
-def get_directions(center_x, center_y, frame_center_x, frame_center_y):
-
+def get_direction(center_x, center_y, frame_center_x, frame_center_y):
     if center_x < frame_center_x:
         direction_x = "Left"
     elif center_x > frame_center_x:
@@ -72,100 +27,85 @@ def get_directions(center_x, center_y, frame_center_x, frame_center_y):
     return direction_x, direction_y
 
 
-def draw_tracking(frame, x, y, w, h, center_x, center_y):
+cap = cv2.VideoCapture(1)
 
-    cv2.rectangle(
-        frame,
-        (x, y),
-        (x + w, y + h),
-        (0, 255, 0),
-        2
+last_print_time = time.time()
+
+while True:
+    success, frame = cap.read()
+
+    if not success:
+        break
+
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    lower_blue = np.array([100, 100, 50])
+    upper_blue = np.array([140, 255, 255])
+
+    mask = cv2.inRange(hsv, lower_blue, upper_blue)
+
+    contours, _ = cv2.findContours(
+        mask,
+        cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE
     )
 
-    cv2.circle(
-        frame,
-        (center_x, center_y),
-        5,
-        (0, 0, 255),
-        -1
-    )
+    if contours:
+        biggest = max(contours, key=cv2.contourArea)
 
-    cv2.putText(
-        frame,
-        f"({center_x}, {center_y})",
-        (center_x + 10, center_y),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.6,
-        (255, 255, 255),
-        2
-    )
+        x, y, w, h = cv2.boundingRect(biggest)
 
+        center_x, center_y = get_object_center(x, y, w, h)
 
-def main():
+        cv2.rectangle(
+            frame,
+            (x, y),
+            (x + w, y + h),
+            (0, 255, 0),
+            2
+        )
 
-    cap = cv2.VideoCapture(CAMERA_INDEX)
+        cv2.circle(
+            frame,
+            (center_x, center_y),
+            5,
+            (0, 0, 255),
+            -1
+        )
 
-    last_print_time = time.time()
+        cv2.putText(
+            frame,
+            f"({center_x}, {center_y})",
+            (center_x + 10, center_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (255, 255, 255),
+            2
+        )
 
-    while True:
+        frame_height, frame_width = frame.shape[:2]
 
-        success, frame = cap.read()
+        frame_center_x = frame_width // 2
+        frame_center_y = frame_height // 2
 
-        if not success:
-            break
+        direction_x, direction_y = get_direction(
+            center_x,
+            center_y,
+            frame_center_x,
+            frame_center_y
+        )
 
-        mask = create_blue_mask(frame)
+        current_time = time.time()
 
-        biggest = find_biggest_contour(mask)
+        if current_time - last_print_time >= 2:
+            print(f"X: {direction_x}, Y: {direction_y}")
+            last_print_time = current_time
 
-        if biggest is not None:
+    cv2.imshow("Webcam", frame)
+    cv2.imshow("Mask", mask)
 
-            x, y, w, h = cv2.boundingRect(biggest)
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
 
-            center_x, center_y = get_object_center(
-                x, y, w, h
-            )
-
-            frame_center_x, frame_center_y = get_frame_center(
-                frame
-            )
-
-            direction_x, direction_y = get_directions(
-                center_x,
-                center_y,
-                frame_center_x,
-                frame_center_y
-            )
-
-            draw_tracking(
-                frame,
-                x,
-                y,
-                w,
-                h,
-                center_x,
-                center_y
-            )
-
-            current_time = time.time()
-
-            if current_time - last_print_time >= PRINT_INTERVAL:
-
-                print(
-                    f"X: {direction_x}, Y: {direction_y}"
-                )
-
-                last_print_time = current_time
-
-        cv2.imshow("Webcam", frame)
-        cv2.imshow("Mask", mask)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    main()
+cap.release()
+cv2.destroyAllWindows()
