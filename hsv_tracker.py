@@ -27,7 +27,7 @@ def get_direction(center_x, center_y, frame_center_x, frame_center_y):
     return direction_x, direction_y
 
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 last_print_time = time.time()
 
